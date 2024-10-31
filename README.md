@@ -23,12 +23,15 @@
 - As for this "Bus Map 3D", with the Protocol Buffers API and GTFS-RT data, it can be expanded to transportation facilities around the world. I want to make it easy to grasp the real-time current location of not only buses, but also trains, ships, aircraft, and other vehicles around the world.
 
 ## sample
-- **sample_index.html**: htmlのコードです。cloud runのURL、を置き換えて利用ください。
-- **sample_code.gs**: gasのコードです。SPREADSHEETのID、シート名、google driveのフォルダID、google api key、VOICEVOX_API_KEY、を置き換えて利用ください。
-- **sample_cloudrun_index.js**: cloud runのコードです。Vision APIのキー、を置き換えて利用ください。
-- **sample_cloudrun_package.json**: cloud runのコードです。
+- **001_sample_index.html**: htmlのコードです。FirebaseのAPIキー、を置き換えて利用ください。
+- **002_sample_login.html**: htmlのコードです。FirebaseのAPIキー、を置き換えて利用ください。
+- **011_sample_001_toei_3d_v4.html**: htmlのコードです。FirebaseのAPIキー、GASのURL、を置き換えて利用ください。
+- **021_sample_code.gs.txt**: gasのコードです。ODPTキー、APIキー、シートID、シート名、Google Maps APIキー、を置き換えて利用ください。
+- **031_sample_cloudfunctions_.gcloudignore**: Cloud Funcitonsのコードです。
+- **032_sample_cloudfunctions_gtfs-realtime.proto**: Cloud Funcitonsのコードです。
+- **033_sample_cloudfunctions_index.js**: Cloud Funcitonsのコードです。
+- **034_sample_cloudfunctions_package.json**: Cloud Funcitonsのコードです。
+- **035_sample_cloudfunctions_vehicle.proto**: Cloud Funcitonsのコードです。
 
 ## URL
-- **[sample_index.html](https://sites.google.com/view/emotionalscore/%E3%83%9B%E3%83%BC%E3%83%A0)**
-- スマホから利用する場合は、ブラウザでPC版サイトに設定してご利用ください。
-- このhtmlは、corsの制限からgoogleのオリジン以外では正しく動作しませんので、ご注意ください。
+- **[index.html](https://kickboxerj0322.github.io/bus-map-3d/)**

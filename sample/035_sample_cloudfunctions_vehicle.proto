@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message Position {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message VehiclePosition {
+  string id = 1;
+  Position position = 2;
+  string timestamp = 3;
+}
+
+message FeedMessage {
+  repeated VehiclePosition entity = 1;
+}

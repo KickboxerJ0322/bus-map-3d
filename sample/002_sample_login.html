@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Map / Login required</title>
+  <style>
+  body {
+    background-image: url('https://kickboxerj0322.github.io/bus-map-3d/068_background_b.png');
+    background-size: auto;
+    background-repeat: repeat;
+    background-position: left top;
+  }  
+  h1 {
+    color: white;
+    font-size: 18px;
+  }
+  header { 
+    display: flex; /* Flexboxを使用 */
+    align-items: center; /* 垂直方向の中央揃え */
+    justify-content: space-between; /* 左右にスペースを均等配置 */
+    background: linear-gradient(135deg, #808080, #4e4e4e);
+    color: white;
+    padding: 4px 4px;
+    font-weight: 600;
+    font-size: 18px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    max-width: 100%; /* ヘッダーを全幅に */
+  }
+  header img {
+    vertical-align: middle;
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+  header button {
+    /* 既存のボタンスタイルを適用 */
+    background-color: #808080;
+    color: white;
+    border: none;
+    padding: 12px 12px;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 50px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease 0s;
+  }
+  header button:hover {
+    background-color: #696969;
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+    transform: translateY(-3px);
+  }  
+  #loginButton {
+    background-color: #808080; /* グレーに変更 */
+    color: white;
+    border: none;
+    padding: 12px 12px;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 50px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease 0s;
+  }
+  #loginButton:hover {
+      background-color: #696969; /* クリック時の色を少し暗く */
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+      transform: translateY(-3px);
+  }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+        <img src="https://kickboxerj0322.github.io/bus-map-3d/066_icon.png" alt="バスレーダーアイコン">
+        Bus Map / Login required
+    </div>
+    <!-- ログアウトボタンを追加 -->
+    <button id="logoutButton">Logout</button>
+  </header>
+  <br><!-- <h1>ログインが必要です</h1> -->
+  <button id="loginButton">Login with your Google account</button>
+
+  <!-- スクリプトを body の終了タグ直前に移動 -->
+  <!-- Firebase SDKの追加 -->
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <!-- Firebase Analytics -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+  <!-- Firebase Authentication -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <!-- Firebaseの初期化 -->
+  <script>
+    // Firebaseの設定と初期化
+    const firebaseConfig = {
+      apiKey: "FirebaseのAPIキー", // あなたのAPIキー
+      authDomain: "bus-radar-3d.firebaseapp.com",
+      projectId: "bus-radar-3d",
+      storageBucket: "bus-radar-3d.appspot.com",
+      messagingSenderId: "459123169045",
+      appId: "1:459123169045:web:e68bbc7492d08e51d2fb1c",
+      measurementId: "G-7970R9LBTR" // measurementIdを追加
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // Firebase Analyticsの初期化（必要に応じて）
+    firebase.analytics();
+  </script>
+
+  <!-- ログインボタンのイベントリスナー -->
+  <script>
+    document.getElementById('loginButton').addEventListener('click', function() {
+      var provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider).then(function(result) {
+        // ログイン成功時
+        window.location.href = "index.html"; // 元のページにリダイレクト
+      }).catch(function(error) {
+        console.error("ログインエラー:", error);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "protobuf-to-json",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "express": "^4.17.1",
+    "protobufjs": "^6.11.2"
+  }
+}

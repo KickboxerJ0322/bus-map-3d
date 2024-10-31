@@ -1,0 +1,215 @@
+<!DOCTYPE html> 
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Map 3D / index</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Google FontsからPoppinsフォントを読み込む -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://kickboxerj0322.github.io/bus-map-3d/067_background_a.png');
+            background-size: auto;
+            background-repeat: repeat;
+            background-position: left top;
+        }  
+        #map-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px; /* 上部に20pxの余白を追加 */
+        }
+        
+        #map { 
+            height: 610px;
+            width: 610px; /* 地図のサイズを指定 */
+            overflow: hidden; /* 地図の境界からはみ出る部分を隠す */
+            border: none; /* 外枠を削除 */
+            box-shadow: 
+                0 20px 30px rgba(0, 0, 0, 0.4), /* 地図全体の下に落ちる影 */
+                inset 0 10px 15px rgba(255, 255, 255, 0.5), /* 内側の光の反射による効果 */
+                inset 0 -10px 20px rgba(0, 0, 0, 0.3), /* 下側の内側の影で立体感を強調 */
+                inset 0 0 0 30px rgba(255, 255, 255, 0.5); /* 内側の光 */
+        }
+
+        header { 
+            display: flex; /* Flexboxを使用 */
+            align-items: center; /* 垂直方向の中央揃え */
+            justify-content: space-between; /* 左右にスペースを均等配置 */
+            background: linear-gradient(135deg, #003366, #002244);
+            color: white;
+            padding: 4px 4px;
+            font-weight: 600;
+            font-size: 18px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            max-width: 100%; /* ヘッダーを全幅に */
+        }
+      
+        header img {
+            vertical-align: middle;
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+        }      
+        header button {
+            background-color: #003366;
+            color: white;
+            border: none;
+            padding: 12px 12px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease 0s;
+        }
+      
+        header button:hover {
+            background-color: #001a33;
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px);
+        }
+      
+        table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .station-icon {
+            background-color: transparent;
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            border: 2px solid gray; /* 濃い灰色に修正 */
+        }
+        button {
+            background-color: #003366; /* 濃い青の背景 */
+            color: white; /* テキストの色 */
+            border: none; /* ボーダーなし */
+            padding: 12px 12px; /* パディングを追加 */
+            text-align: center; /* テキストを中央揃え */
+            text-decoration: none; /* テキストの下線なし */
+            display: inline-block; /* インラインブロック要素にする */
+            font-size: 12px; /* フォントサイズ */
+            margin: 2px 2px; /* マージン */
+            cursor: pointer; /* カーソルをポインターにする */
+            border-radius: 50px; /* 丸みを帯びたボタン */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* 影を追加 */
+            transition: all 0.3s ease 0s; /* アニメーションの遷移を追加 */
+        }   
+        button:hover {
+            background-color: #001a33; /* ホバー時にさらに濃い青に変更 */
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4); /* ホバー時に影を強調 */
+            transform: translateY(-3px); /* ホバー時に少し上に移動する */
+        }
+        /* フォントサイズを小さく設定 */
+        .status-text {
+            font-size: 12px; /* テキスト全体を小さくする */
+            display: inline; /* インライン表示に変更 */
+        }
+        /* 行の間にスペースを追加 */
+        .status-container {
+            display: inline; /* 同じ行に表示 */
+        }
+        /* スタイルの設定 */
+        #locationStatus, #timestamp {
+            font-size: 12px; /* フォントサイズを小さく設定 */
+        }
+        #placeInput {
+            padding: 5px;
+            font-size: 12px;
+        }
+        #dataTable, #executionTable {
+            font-size: 12px; /* テーブル内の文字を12pxに設定 */
+        }
+        /* 見出しのフォントサイズを12pxに設定 */
+        .small-heading {
+            font-size: 12px;
+        }
+        /* 追加したスタイル */
+        .white-link {
+            color: white;
+        }
+        .left-aligned-button-container {
+            text-align: left; /* ボタンを左寄せにする */
+            margin-top: 10px;
+            padding-left: 10px; /* ヘッダーの横に合わせるための余白を追加 */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+        <img src="https://kickboxerj0322.github.io/bus-map-3d/066_icon.png" alt="バスレーダーアイコン" style="vertical-align: middle; width: 50px; height: 50px; margin-right: 10px;">
+        Bus Map 3D / index
+        </div>
+        <button id="logoutButton">Logout</button>
+    </header>
+    <!-- 追加された説明文 -->
+    <div style="color: #002244; margin: 20px 0;">
+        <p>"Bus Map 3D" is an innovative website that displays the current location of buses on a 3D map in real time.</p>
+        <p>You can visually track the location of the bus, so you can intuitively understand when the bus will arrive.</p>
+        <p>You can check the movement of the bus by the bus icon and polyline displayed on the map, place a Polygon at a specific location, and use the FlyTo and FlyAround buttons to check your destination as if you were flying in the sky.</p>
+        <p>We have adopted a design that is easy to use on smartphones and PCs, pursuing simple and intuitive operability.</p>
+        <p>"Bus Map 3D" will make your daily bus use more comfortable and less stressful.</p>
+        <p>∴3D maps use Photorealistic 3D Maps in JavaScript.</p>
+        <p>∴Real-time bus location information uses API data by Protocol Buffers and GTFS-RT data.</p>
+    </div>
+    <!-- 新しいボタン追加 -->
+    <div class="left-aligned-button-container">
+        <button onclick="window.location.href='https://kickboxerj0322.github.io/bus-map-3d/001_toei_3d_v4.html'">Bus Map 3D / Toei Bus - 都営バス</button>
+    </div>
+    <!-- Firebase SDKの追加 -->
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- Firebaseの初期化 -->
+    <script>
+        // Firebaseの設定と初期化
+        const firebaseConfig = {
+        apiKey: "FirebaseのAPIキー",
+        authDomain: "bus-radar-3d.firebaseapp.com",
+        projectId: "bus-radar-3d",
+        storageBucket: "bus-radar-3d.appspot.com",
+        messagingSenderId: "459123169045",
+        appId: "1:459123169045:web:e68bbc7492d08e51d2fb1c",
+        measurementId: "G-7970R9LBTR"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // 必要に応じてFirebase Analyticsを初期化
+        // firebase.analytics();
+    </script>
+
+    <!-- ユーザーの認証状態を監視 -->
+    <script>
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                console.log("User signed in:", user);
+                // 認証済みユーザーへの処理（必要に応じて追加）
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+    // ログアウトボタンのイベントリスナー
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            firebase.auth().signOut().then(function() {
+                // ログアウト成功時
+                window.location.href = "login.html";
+            }).catch(function(error) {
+                console.error("ログアウトエラー:", error);
+            });
+        });
+  </script>
+</body>
+</html>

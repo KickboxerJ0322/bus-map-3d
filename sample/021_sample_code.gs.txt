@@ -1,0 +1,229 @@
+function getVehiclePositions(startColumn, targetVehicleID, targetLatitude, targetLongitude) { 
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.getRange(2, 1, sheet.getMaxRows() - 1, sheet.getMaxColumns()).clearContent(); // 2行目以降のデータを削除
+
+  if (!startColumn) {
+    startColumn = 1;  // デフォルト値を設定
+  }
+
+  var url = "https://api.odpt.org/api/v4/gtfs/realtime/ToeiBus?acl:consumerKey=ODPTキー";
+  var response = UrlFetchApp.fetch(url);
+  var protobufData = response.getContent();
+  
+  var base64Data = Utilities.base64Encode(protobufData);
+  var cloudFunctionUrl = "https://us-central1-jumpeicloud.cloudfunctions.net/convertProtobufToJson";
+  
+  var options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify({data: base64Data}),
+    'muteHttpExceptions': true
+  };
+  
+  var jsonResponse = UrlFetchApp.fetch(cloudFunctionUrl, options);
+  
+  if (jsonResponse.getResponseCode() !== 200) {
+    return;
+  }
+  
+  try {
+    var json = JSON.parse(jsonResponse.getContentText());
+    var entities = json.entity;
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    var headers = ['VehicleID', 'Latitude', 'Longitude', 'Readable Date', 'Destination'];
+    sheet.getRange(1, startColumn, 1, headers.length).setValues([headers]);
+
+    var row = 2;
+    entities.forEach(function(entity) {
+      var vehicleID = entity.vehicle.vehicle.id;
+      
+      // フィルタリングを削除し、全てのVehicleIDを処理
+      if (!targetVehicleID || vehicleID === targetVehicleID) {
+        var latitude = entity.vehicle.position.latitude;
+        var longitude = entity.vehicle.position.longitude;
+        var timestamp = entity.vehicle.timestamp;
+        var readableDate = new Date(timestamp * 1000);
+
+        // 指定された位置がある場合、距離を計算して2km以内か確認
+        if (!isNaN(targetLatitude) && !isNaN(targetLongitude)) {
+          var distance = calculateDistance(latitude, longitude, targetLatitude, targetLongitude);
+          if (distance > 2) {
+            // 2km以上離れている場合はスキップ
+            return;
+          }
+        }
+
+        sheet.getRange(row, startColumn, 1, headers.length - 1).setValues([[vehicleID, latitude, longitude, readableDate]]);
+
+        var destinationFormula = "=IFERROR(VLOOKUP(A" + row + ", trips!C:D, 2, FALSE), \"行先不明\")";
+        sheet.getRange(row, startColumn + headers.length - 1).setFormula(destinationFormula);
+
+        row++;
+      }
+    });
+    
+  } catch (e) {
+    Logger.log("Error: " + e.toString());
+  }
+}
+
+// 2点間の距離を計算する関数（ハバースインの公式）
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  var R = 6371; // 地球の半径（km）
+  var dLat = toRadians(lat2 - lat1);
+  var dLon = toRadians(lon2 - lon1);
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  var d = R * c;
+  return d; // 距離（km）
+}
+
+function toRadians(degrees) {
+  return degrees * Math.PI / 180;
+}
+
+function getAlerts() {
+  var url = "https://api.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_alert?acl:consumerKey=ODPTキー";
+  var response = UrlFetchApp.fetch(url);
+  var protobufData = response.getContent();
+
+  var base64Data = Utilities.base64Encode(protobufData);
+  var cloudFunctionUrl = "https://us-central1-jumpeicloud.cloudfunctions.net/convertProtobufToJson";
+
+  var options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify({data: base64Data}),
+    'muteHttpExceptions': true
+  };
+
+  var jsonResponse = UrlFetchApp.fetch(cloudFunctionUrl, options);
+
+  if (jsonResponse.getResponseCode() !== 200) {
+    return;
+  }
+
+  try {
+    var json = JSON.parse(jsonResponse.getContentText());
+    var alerts = json.entity;
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('alert');
+    var headers = ['Alert ID', 'Alert Header', 'Alert Description', 'Timestamp'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    var row = 2;
+    if (!alerts || alerts.length === 0) {
+      var timestamp = new Date();
+      sheet.getRange(row, 1, 1, headers.length).setValues([['No Alerts', 'No Alerts', 'No Alerts', timestamp]]);
+    } else {
+      alerts.forEach(function(alert) {
+        var alertID = alert.id;
+        var alertHeader = alert.alert.headerText?.translation[0]?.text || "No Header";
+        var alertDescription = alert.alert.descriptionText?.translation[0]?.text || "No Description";
+        var timestamp = new Date();
+
+        sheet.getRange(row, 1, 1, headers.length).setValues([[alertID, alertHeader, alertDescription, timestamp]]);
+        row++;
+      });
+    }
+  } catch (e) {
+    Logger.log("Error: " + e.toString());
+  }
+}
+
+function getTripUpdates() {
+  var url = "https://api.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_trip_update?acl:consumerKey=ODPTキー";
+  var response = UrlFetchApp.fetch(url);
+  var protobufData = response.getContent();
+
+  var base64Data = Utilities.base64Encode(protobufData);
+  var cloudFunctionUrl = "https://us-central1-jumpeicloud.cloudfunctions.net/convertProtobufToJson";
+
+  var options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify({data: base64Data}),
+    'muteHttpExceptions': true
+  };
+
+  var jsonResponse = UrlFetchApp.fetch(cloudFunctionUrl, options);
+
+  if (jsonResponse.getResponseCode() !== 200) {
+    return;
+  }
+
+  try {
+    var json = JSON.parse(jsonResponse.getContentText());
+    var tripUpdates = json.entity;
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('tripupdates');
+    var headers = ['Trip Update ID', 'Trip Start Time', 'Trip Description', 'Timestamp'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    var row = 2;
+    if (!tripUpdates || tripUpdates.length === 0) {
+      var timestamp = new Date();
+      sheet.getRange(row, 1, 1, headers.length).setValues([['No Trip Updates', 'No Trip Updates', 'No Trip Updates', timestamp]]);
+    } else {
+      tripUpdates.forEach(function(update) {
+        var tripUpdateID = update.id;
+        var tripStartTime = update.tripUpdate?.trip?.startTime || "No Start Time";
+        var tripDescription = update.tripUpdate?.trip?.tripId || "No Description";
+        var timestamp = new Date();
+
+        sheet.getRange(row, 1, 1, headers.length).setValues([[tripUpdateID, tripStartTime, tripDescription, timestamp]]);
+        row++;
+      });
+    }
+  } catch (e) {
+    Logger.log("Error: " + e.toString());
+  }
+}
+
+function runGetVehiclePositionsRepeatedly(targetVehicleID, targetLatitude, targetLongitude) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.getRange(2, 1, sheet.getMaxRows() - 1, sheet.getMaxColumns()).clearContent(); // 2行目以降のデータを削除
+  
+  getVehiclePositions(1, targetVehicleID, targetLatitude, targetLongitude);  // 1回のみA〜E列に出力
+}
+
+function doGet(e) {
+  var action = e.parameter.action || '';
+
+  if (action === 'Alerts') {
+    getAlerts();
+  } else if (action === 'TripUpdates') {
+    getTripUpdates();
+  } else if (action === 'getApiData') {
+    // APIキーやシート情報を返す
+    return ContentService.createTextOutput(JSON.stringify(getApiData()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var targetVehicleID = e.parameter.vehicleID || "";  // クエリパラメータからVehicleIDを取得
+  var targetLatitude = parseFloat(e.parameter.latitude);
+  var targetLongitude = parseFloat(e.parameter.longitude);
+  runGetVehiclePositionsRepeatedly(targetVehicleID, targetLatitude, targetLongitude);
+  return ContentService.createTextOutput("Process started for VehicleID: " + (targetVehicleID || "All"));
+}
+
+// APIキーやシートIDを返す関数
+function getApiData() {
+  const apiKey = 'APIキー';  // APIキー
+  const sheetId = 'シートID';  // シートID
+  const sheetName = 'シート名'; // シート名
+  const range = `${sheetName}!A2:E500`;
+  // 新たにGoogle Maps APIキーの変数を追加（変数名をmapsApiKeyとする）
+  const mapsApiKey = 'Google Maps APIキー';  // Google Maps APIキー
+
+  return {
+    apiKey: apiKey,
+    sheetId: sheetId,
+    range: range,
+    mapsApiKey: mapsApiKey  // 追加
+  };
+}

@@ -1,0 +1,1398 @@
+<!DOCTYPE html> 
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Map 3D</title>
+    <!-- Google FontsからPoppinsフォントを読み込む -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      html,
+      body {
+        height:100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      gmp-map-3d {
+        height: 460px;
+        width: 100%; /* 幅を100%に設定 */
+      }
+      #map-container {
+        position: relative;
+        display: inline-block;
+        margin-top: 10px; /* 上部に20pxの余白を追加 */
+        width: 100%; /* 追加: 幅を100%に設定 */
+      }
+    
+      #map { 
+        height: 460px;
+        width: 100%; /* 幅を100%に設定 */
+        overflow: hidden; /* 地図の境界からはみ出る部分を隠す */
+        border: none; /* 外枠を削除 */
+        box-shadow: 
+            0 20px 30px rgba(0, 0, 0, 0.4), /* 地図全体の下に落ちる影 */
+            inset 0 10px 15px rgba(255, 255, 255, 0.5), /* 内側の光の反射による効果 */
+            inset 0 -10px 20px rgba(0, 0, 0, 0.3), /* 下側の内側の影で立体感を強調 */
+            inset 0 0 0 30px rgba(255, 255, 255, 0.5); /* 内側の光 */
+      }
+      @media (max-width: 768px) {
+        #map, gmp-map-3d {
+            height: 460px; /* 小さい画面では高さを縮小 */
+        }
+      }
+      header { 
+        display: flex; /* Flexboxを使用 */
+        align-items: center; /* 垂直方向の中央揃え */
+        justify-content: space-between; /* 左右にスペースを均等配置 */
+        background: linear-gradient(135deg, #cc5500, #cc3300);
+        color: white;
+        padding: 4px 4px;
+        font-weight: 600;
+        font-size: 18px;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        font-family: 'Poppins', sans-serif;
+        max-width: 100%; /* ヘッダーを全幅に */
+      }
+      header img {
+        vertical-align: middle;
+        width: 60px;
+        height: 60px;
+        margin-right: 15px;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        header button {
+            /* 既存のボタンスタイルを適用 */
+            background-color: #cc5500;
+            color: white;
+            border: none;
+            padding: 12px 12px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease 0s;
+        }
+        
+        header button:hover {
+            background-color: #b34700;
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px);
+        }
+
+      table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+      th { background-color: #f2f2f2; }
+      .station-icon {
+        background-color: transparent;
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
+        border: 2px solid gray; /* 濃い灰色に修正 */
+      }
+      button {
+        background-color: #cc5500; /* 濃いオレンジの背景色 */
+        color: white; /* テキストの色 */
+        border: none; /* ボーダーなし */
+        padding: 12px 12px; /* パディングを追加 */
+        text-align: center; /* テキストを中央揃え */
+        text-decoration: none; /* テキストの下線なし */
+        display: inline-block; /* インラインブロック要素にする */
+        font-size: 12px; /* フォントサイズ */
+        margin: 2px 2px; /* マージン */
+        cursor: pointer; /* カーソルをポインターにする */
+        border-radius: 50px; /* 丸みを帯びたボタン */
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* 影を追加 */
+        transition: all 0.3s ease 0s; /* アニメーションの遷移を追加 */
+      }   
+      button:hover {
+        background-color: #b34700; /* ホバー時にさらに濃いオレンジに変更 */
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4); /* ホバー時に影を強調 */
+        transform: translateY(-3px); /* ホバー時に少し上に移動する */
+      }
+      /* フォントサイズを小さく設定 */
+      .status-text {
+        font-size: 12px; /* テキスト全体を小さくする */
+        display: inline; /* インライン表示に変更 */
+      }
+      /* 行の間にスペースを追加 */
+      .status-container {
+          display: inline; /* 同じ行に表示 */
+      }
+      /* スタイルの設定 */
+      #locationStatus, #timestamp {
+          font-size: 12px; /* フォントサイズを小さく設定 */
+      }
+      #placeInput {
+          padding: 5px;
+          font-size: 12px;
+          width: 300px; /* 横幅を1.5倍に設定 */
+      }
+      #dataTable, #executionTable {
+          font-size: 12px; /* テーブル内の文字を12pxに設定 */
+          display: none; /* デフォルトで非表示に設定 */
+      }
+      /* 見出しのフォントサイズを12pxに設定 */
+      .small-heading {
+          font-size: 12px;
+      }
+      .pac-controls {
+          display: inline-block;
+          padding: 0px 11px;
+          display: none;
+      }
+      .pac-controls label {
+        font-family: Roboto;
+        font-size: 13px;
+        font-weight: 300;
+      }
+      .pac-card {
+        background-color: transparent;
+        border: 0 solid transparent;
+        border-radius: 4px;
+        margin: 4px;
+        padding: 0 0.5em;
+        font: 400 18px Roboto, Arial, sans-serif;
+        overflow: hidden;
+        font-family: Roboto;
+        padding: 0;
+        position: absolute;
+        left: 310px;
+        top: 25px;
+        z-index: 1000;
+        display: none;
+      }
+      #pac-container {
+        padding-top: 0px;
+        padding-bottom: 0px;
+        margin-right: 0px;
+        margin-left: 0px;
+        border-radius: 0px;
+        display: none;
+      }
+      #pac-input {
+        background-color: transparent;
+        font-family: Roboto;
+        font-size: 12px;
+        font-weight: 80;
+        margin-left: 8px;
+        padding: 0 11px 0 13px;
+        text-overflow: ellipsis;
+        width: 250px;
+        color: white; /* ここに追加 */
+      }
+      #pac-input::placeholder {
+        color: white;
+      }
+      #pac-input:focus {
+        border-color: #cc5500;
+      }
+      #title {
+        color: #fff;
+        background-color: #cc5500;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+        <div class="header-left">
+            <img src="https://kickboxerj0322.github.io/bus-map-3d/066_icon.png" alt="バスレーダーアイコン">
+            Bus Map 3D / Toei Bus - 都営バス
+        </div>
+        <!-- ログアウトボタンを追加 -->
+        <button id="logoutButton">Logout</button>
+    </header>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+    <div class="pac-card" id="pac-card">
+        <!-- <div id="title">Navigate to a place</div> -->
+        <div id="pac-container">
+          <input class="pac-input" type="text" id="pac-input" name="pac-input" placeholder="location..." />
+        </div>
+    </div>
+    <div>
+        <p class="status-container">
+            <span class="status-text">L: <span id="locationStatus">...</span></span>
+            &nbsp;|&nbsp; <!-- スペースと区切り線を追加 -->
+            <span class="status-text">D: <span id="timestamp">...</span></span>
+        </p>
+    </div>
+    <div>
+        <input type="text" id="placeInput" placeholder="Enter location or landmark">
+        <button id="setCustomLocationButton">Set</button>
+        <button id="getCurrentLocationButton">Current</button>
+        <button id="refreshButton">Bus</button>
+        <button id="showStationsButton">Bus stop</button>
+        <!-- 「その他」ボタンを追加 -->
+        <button id="moreOptionsButton">Others</button>
+        <!-- 以下のボタン群をまとめて囲む -->
+        <div id="moreOptions" style="display: none;">
+            <button id="polygonButton">Polygon</button> <!-- ここにポリゴンボタンを追加 -->
+            <button id="flyToButton">FlyTo</button>
+            <button id="flyCameraButton">FlyAround</button> <!-- 追加 -->
+            <button id="updateEvery20sButton">Bus20x9</button>
+            <button id="stopUpdateButton">Stop</button>
+            <button id="clearDataMarkersButton">Bus delete</button>
+            <button id="clearStationMarkersButton">Bus stop delete</button>
+            <input type="text" id="vehicleIdInput" placeholder="Enter Vehicle ID">
+            <button id="startButton">Execution</button>
+            <button id="stopstartButton">Execution stop</button>
+            <button id="clearExecutionMarkersButton">Execution delete</button>
+            <button id="labelsOffButton">Labels off</button>
+            <button id="labelsOnButton">Labels on</button>
+            <button id="disableExplorationButton">Explore off</button>
+            <button id="enableExplorationButton">Explore on</button>
+        </div>
+    </div>
+    <!-- <div>
+        <input type="text" id="vehicleIdInput" placeholder="Enter Vehicle ID">
+        <button id="startButton">実行</button>
+        <button id="stopstartButton">実行停止</button>
+        <button id="clearExecutionMarkersButton">実行削除</button>
+    </div> -->
+    <div>
+      <button id="busResultsButton" class="small-heading">Bus results</button>
+      <table id="dataTable">
+          <thead>
+              <tr>
+                  <th>Alphabet ID</th>
+                  <th>Vehicle ID</th>
+                  <th>Lat (1)</th>
+                  <th>Lng (1)</th>
+                  <th>Date (1)</th>
+                  <th>Dest (1)</th>
+                  <th>Lat (2回目)</th>
+                  <th>Lng (2回目)</th>
+                  <th>Date (2回目)</th>
+                  <th>Dest (2回目)</th>
+                  <th>Lat (3回目)</th>
+                  <th>Lng (3回目)</th>
+                  <th>Date (3回目)</th>
+                  <th>Dest (3回目)</th>
+                  <th>Lat (4回目)</th>
+                  <th>Lng (4回目)</th>
+                  <th>Date (4回目)</th>
+                  <th>Dest (4回目)</th>
+                  <th>Lat (5回目)</th>
+                  <th>Lng (5回目)</th>
+                  <th>Date (5回目)</th>
+                  <th>Dest (5回目)</th>
+                  <th>Lat (6回目)</th>
+                  <th>Lng (6回目)</th>
+                  <th>Date (6回目)</th>
+                  <th>Dest (6回目)</th>
+                  <th>Lat (7回目)</th>
+                  <th>Lng (7回目)</th>
+                  <th>Date (7回目)</th>
+                  <th>Dest (7回目)</th>
+                  <th>Lat (8回目)</th>
+                  <th>Lng (8回目)</th>
+                  <th>Date (8回目)</th>
+                  <th>Dest (8回目)</th>
+                  <th>Lat (9回目)</th>
+                  <th>Lng (9回目)</th>
+                  <th>Date (9回目)</th>
+                  <th>Dest (9回目)</th>
+              </tr>
+          </thead>
+          <tbody>
+              <!-- データはここに追加されます（最大20行） -->
+          </tbody>
+      </table>
+    </div>
+    <div>
+      <button id="executionResultsButton" class="small-heading">Execution results</button>
+      <table id="executionTable">
+          <thead>
+              <tr>
+                  <th>Alphabet ID</th>
+                  <th>Vehicle ID</th>
+                  <th>Lat (1回目)</th>
+                  <th>Lng (1回目)</th>
+                  <th>Date (1回目)</th>
+                  <th>Dest (1回目)</th>
+                  <th>Lat (2回目)</th>
+                  <th>Lng (2回目)</th>
+                  <th>Date (2回目)</th>
+                  <th>Dest (2回目)</th>
+                  <th>Lat (3回目)</th>
+                  <th>Lng (3回目)</th>
+                  <th>Date (3回目)</th>
+                  <th>Dest (3回目)</th>
+                  <th>Lat (4回目)</th>
+                  <th>Lng (4回目)</th>
+                  <th>Date (4回目)</th>
+                  <th>Dest (4回目)</th>
+                  <th>Lat (5回目)</th>
+                  <th>Lng (5回目)</th>
+                  <th>Date (5回目)</th>
+                  <th>Dest (5回目)</th>
+                  <th>Lat (6回目)</th>
+                  <th>Lng (6回目)</th>
+                  <th>Date (6回目)</th>
+                  <th>Dest (6回目)</th>
+                  <th>Lat (7回目)</th>
+                  <th>Lng (7回目)</th>
+                  <th>Date (7回目)</th>
+                  <th>Dest (7回目)</th>
+                  <th>Lat (8回目)</th>
+                  <th>Lng (8回目)</th>
+                  <th>Date (8回目)</th>
+                  <th>Dest (8回目)</th>
+                  <th>Lat (9回目)</th>
+                  <th>Lng (9回目)</th>
+                  <th>Date (9回目)</th>
+                  <th>Dest (9回目)</th>
+              </tr>
+          </thead>
+          <tbody>
+              <!-- データはここに追加されます -->
+          </tbody>
+      </table>
+    </div>
+    <!-- Firebase SDKの追加 -->
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- Firebaseの初期化 -->
+    <script>
+      // Firebaseの設定と初期化
+      const firebaseConfig = {
+        apiKey: "FirebaseのAPIキー",
+        authDomain: "bus-radar-3d.firebaseapp.com",
+        projectId: "bus-radar-3d",
+        storageBucket: "bus-radar-3d.appspot.com",
+        messagingSenderId: "459123169045",
+        appId: "1:459123169045:web:e68bbc7492d08e51d2fb1c",
+        measurementId: "G-7970R9LBTR"
+      };
+      firebase.initializeApp(firebaseConfig);
+
+      // Firebase Analyticsの初期化（必要に応じて）
+      firebase.analytics();
+    </script>
+    <script type="text/javascript">
+      // Firebase認証状態の監視
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                // ユーザーがサインインしている場合
+                console.log("User signed in:", user);
+                // 地図の初期化をここで行う
+                main();
+            } else {
+                // ユーザーがサインインしていない場合、ログインページにリダイレクト
+                window.location.href = "login.html";
+            }
+        });
+
+      let map3DElement = null;
+      let currentLocationMarker = null; // 現在位置のマーカーを保持する変数
+      let Marker3DElement; // Marker3DElementをグローバルに保持
+      let PinElement; // PinElementをグローバルに保持
+
+      async function getApiData() {
+        const response = await fetch('GASのURL');
+        if (!response.ok) {
+          console.error("Failed to fetch API data from GAS");
+          return;
+        }
+        return await response.json();
+      }
+
+      async function loadGoogleMapsApi(apiKey) {
+        return new Promise((resolve, reject) => {
+          window.initGoogleMapsApi = function() {
+            resolve();
+          };
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMapsApi&v=alpha&libraries=maps3d,marker,places,elevation`;
+          script.async = true;
+          script.defer = true;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      async function main() {
+        const apiData = await getApiData();
+        if (!apiData) {
+          console.error("apiData is undefined");
+          return;
+        }
+        const apiKey = apiData.mapsApiKey;
+        if (!apiKey) {
+          console.error("apiKey is undefined");
+          return;
+        }
+
+        // Google Maps APIをロード
+        await loadGoogleMapsApi(apiKey);
+
+        // ここで他の初期化処理やイベントリスナーを設定
+        await init();
+      }
+
+      async function init() {
+        const { Map3DElement, Marker3DElement: Marker, Polyline3DElement } = await google.maps.importLibrary("maps3d");
+        const { PinElement: Pin } = await google.maps.importLibrary("marker");
+        Marker3DElement = Marker; // グローバル変数に代入
+        PinElement = Pin; // PinElementをグローバル変数に代入
+
+        const initialLat = 35.658584; // 東京タワーの緯度
+        const initialLng = 139.7454316; // 東京タワーの経度
+        const initialLocation = { lat: initialLat, lng: initialLng };
+
+        // Elevationを取得
+        const elevation = await getElevationforPoint(initialLocation);
+        const initialAltitude = elevation ? elevation + 500 : 1000; 
+
+        map3DElement = new Map3DElement({
+          center: { lat: initialLat, lng: initialLng, altitude: initialAltitude }, // 東京タワー
+          tilt: 65,
+          range: 500,
+          defaultLabelsDisabled: false // ラベルを初期表示
+        });
+        // document.body.append(map3DElement);
+        document.getElementById("map").append(map3DElement);
+        await initAutocomplete(); // 修正点：awaitを追加
+
+        // 【追加】ページ読み込み時に現在位置を東京タワーに設定し、カメラを飛行させる
+        // マーカーを作成
+        currentLocationMarker = new Marker3DElement({
+          position: { lat: initialLat, lng: initialLng, altitude: initialAltitude } // 東京タワー
+        });
+        // マーカーを地図に追加
+        map3DElement.append(currentLocationMarker);
+
+        // 「現在位置」を表示
+        document.getElementById('locationStatus').textContent = `Lat: ${initialLat.toFixed(6)}, Lng: ${initialLng.toFixed(6)}`;
+
+        // カメラの設定
+        const camera = {
+          center: { lat: initialLat, lng: initialLng, altitude: initialAltitude }, // 東京タワー
+          tilt: 65,
+          range: 500
+        };
+
+      }        
+
+      async function initAutocomplete() {
+        playSound();
+        const { Autocomplete } = await google.maps.importLibrary("places");
+        const inputs = ["pac-input", "placeInput"];
+        inputs.forEach(inputId => {
+          const autocomplete = new Autocomplete(
+            document.getElementById(inputId),
+            {
+              fields: [
+                "geometry",
+                "name",
+                "place_id"
+              ],
+            }
+          );
+          autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.viewport) {
+              window.alert("No viewport for input: " + place.name);
+              return;
+            }
+            // 選択された場所を保存
+            if (inputId === "placeInput") {
+              window.placeInputLastPlace = place;
+            }
+            if (inputId === "pac-input") {
+              // 既存の動作を維持（必要ならここで処理を追加）
+              zoomToViewport(place.geometry);
+            }
+          });
+        });
+      }
+      
+      const zoomToViewport = async (geometry) => {
+        const { AltitudeMode, Polygon3DElement } = await google.maps.importLibrary("maps3d");
+        let viewport = geometry.viewport;
+        let locationPoints = [
+          { lat: viewport.getNorthEast().lat(), lng: viewport.getNorthEast().lng(), altitude: 500 },
+          { lat: viewport.getSouthWest().lat(), lng: viewport.getNorthEast().lng(), altitude: 500 },
+          { lat: viewport.getSouthWest().lat(), lng: viewport.getSouthWest().lng(), altitude: 500 },
+          { lat: viewport.getNorthEast().lat(), lng: viewport.getSouthWest().lng(), altitude: 500 }
+        ];
+        
+        let locationPolygon = new Polygon3DElement({
+          altitudeMode: AltitudeMode.RELATIVE_TO_GROUND,
+          strokeColor: "red",
+          strokeWidth: 1,
+          fillColor: "rgba(255, 0, 0, 0.1)",
+          extruded: true,
+          outerCoordinates: locationPoints,
+        });
+        
+        map3DElement.append(locationPolygon);
+        console.log(locationPolygon);
+        
+        let elevation = await getElevationforPoint(geometry.location);
+        if (map3DElement) {
+          map3DElement.center = { lat: geometry.location.lat(), lng: geometry.location.lng(), altitude: elevation + 50 };
+          map3DElement.heading = 0;
+          map3DElement.range = 500;
+          map3DElement.tilt = 65;
+        }
+        playgetSound();
+      };
+      
+      async function getElevationforPoint(location) {
+        const { ElevationService } = await google.maps.importLibrary("elevation");
+        const elevatorService = new google.maps.ElevationService();
+        const elevationResponse = await elevatorService.getElevationForLocations({
+          locations: [location],
+        });
+        if (!(elevationResponse.results && elevationResponse.results.length)) {
+          window.alert(`標高データが取得できませんでした。`);
+          return;
+        }
+        const elevation = elevationResponse.results[0].elevation || 10;
+        return elevation;
+      }
+  
+      // 現在位置ボタンのイベントリスナー
+      document.getElementById('getCurrentLocationButton').addEventListener('click', () => {
+        playSound();
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            // Elevationを取得
+            const elevation = await getElevationforPoint({ lat: latitude, lng: longitude });
+
+            // 3Dマップの中心をユーザーの現在位置に更新
+            if (map3DElement) {
+              map3DElement.center = { lat: latitude, lng: longitude, altitude: elevation + 50 };
+              map3DElement.heading = 0;
+              map3DElement.range = 500;
+              map3DElement.tilt = 65;
+            }
+
+            // 現在位置を表示
+            document.getElementById('locationStatus').textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+
+            // 既存のマーカーを削除
+            if (currentLocationMarker) {
+              map3DElement.removeChild(currentLocationMarker);
+            }
+
+            // Marker3DElementを使用してマーカーを作成
+            currentLocationMarker = new Marker3DElement({
+              position: { lat: latitude, lng: longitude, altitude: elevation }
+            });
+
+            // マーカーをマップに追加
+            map3DElement.append(currentLocationMarker);
+            playgetSound();
+
+          }, (error) => {
+            console.error('現在位置を取得できませんでした: ', error);
+            alert('現在位置を取得できませんでした。ブラウザの設定で位置情報の利用を許可してください。');
+          });
+        } else {
+          alert('お使いのブラウザは位置情報取得に対応していません。');
+        }
+      });
+
+      // 地名やランドマーク名から緯度・経度を取得し、現在位置に設定する関数
+      async function setCustomLocation() {
+        const location = document.getElementById('placeInput').value;
+        if (!location) {
+          alert("地名やランドマーク名を入力してください");
+          return;
+        }
+      
+        const apiData = await getApiData();
+        if (!apiData) {
+          console.error("apiData is undefined");
+          return;
+        }
+        const apiKey = apiData.mapsApiKey;
+        if (!apiKey) {
+          console.error("apiKey is undefined");
+          return;
+        }
+      
+        // エンコードされた地名を用いてURLを生成
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
+        try {
+          const response = await fetch(geocodeUrl);
+          const data = await response.json();
+          if (data.status === "OK") {
+            const latLng = data.results[0].geometry.location;
+            const latitude = latLng.lat;
+            const longitude = latLng.lng;
+      
+            // デバッグ用ログ
+            console.log('latitude:', latitude, 'longitude:', longitude);
+      
+            // Elevationを取得
+            const elevation = await getElevationforPoint({ lat: latitude, lng: longitude });
+      
+            // 3Dマップの中心をユーザーの現在位置に更新
+            if (map3DElement) {
+              map3DElement.center = { lat: latitude, lng: longitude, altitude: elevation + 50 };
+              map3DElement.heading = 0;
+              map3DElement.range = 500;
+              map3DElement.tilt = 65;
+            }
+      
+            // 現在位置を表示
+            document.getElementById('locationStatus').textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+      
+            // 既存のマーカーを削除
+            if (currentLocationMarker) {
+              map3DElement.removeChild(currentLocationMarker);
+            }
+      
+            // Marker3DElementを使用してマーカーを作成
+            currentLocationMarker = new Marker3DElement({
+              position: { lat: latitude, lng: longitude, altitude: elevation }
+            });
+      
+            // マーカーをマップに追加
+            map3DElement.append(currentLocationMarker);
+            playgetSound();
+      
+          } else {
+            alert("位置情報が取得できませんでした。別の場所を試してください。");
+          }
+        } catch (error) {
+          console.error("Error fetching geocode data:", error);
+          alert("エラーが発生しました。後でもう一度お試しください。");
+        }
+      }
+
+      // 特定位置ボタンのイベントリスナーを追加
+      document.getElementById('setCustomLocationButton').addEventListener('click', () => {
+          playSound();
+          // 特定位置情報の取得処理
+          setCustomLocation();
+      });      
+
+      // 音声を再生する関数
+      function playgetSound() {
+        const audio = new Audio('https://kickboxerj0322.github.io/bus-map-3d/071_toy-button-105724.mp3');
+        audio.play();
+      }
+
+      // 音声を3回連続で再生する関数
+      function playAudioThreeTimes() {
+        const audio = new Audio('https://kickboxerj0322.github.io/bus-map-3d/072_menu-click-89198.mp3');
+        let playCount = 0;  // 再生回数をカウントする変数
+    
+        function playNext() {
+            if (playCount < 3) {
+                audio.play();
+                playCount++;  // 再生回数をカウント
+            }
+        }
+    
+        // 音声が終了したら次を再生
+        audio.onended = playNext;
+    
+        // 最初の再生を開始
+        playNext();
+      }
+
+      // 音声を再生する関数
+      function playSound() {
+          const audio = new Audio('https://kickboxerj0322.github.io/bus-map-3d/073_start-13691.mp3');
+          audio.play();
+      }
+
+      // 1019追加
+      let markers = {};  // データを更新ボタン用のマーカー
+      let executionMarkers = {};  // 実行ボタン用のマーカー
+      let stationMarkers = [];  // バス停のマーカー
+      const executionColors = ["yellow", "orange", "cyan", "mediumorchid", "khaki", "magenta", "burlywood",
+          "aliceblue", "chocolate", "tan"];
+      const alphabetColors = [
+          "yellow", "orange", "cyan", "mediumorchid", "khaki", "magenta", "burlywood",
+          "aliceblue", "chocolate", "tan", "pink", "lime", "limegreen", "lightsteelblue", "mediumorchid", "olive",
+          "aqua", "peachpuff", "gray", "silver", "gold", "darkgoldenrod", "coral", "darkcyan",
+          "darkorange", "forestgreen"
+      ];
+      const alphabetIDs = [];
+      for (let i = 0; i < 500; i++) {
+          let id = String.fromCharCode(97 + (i % 26));
+          let prefix = Math.floor(i / 26);
+          alphabetIDs.push(prefix ? String.fromCharCode(96 + prefix) + id : id);
+      }
+
+      async function fetchSheetData() {
+          const apiData = await getApiData();
+          if (!apiData) {
+            console.error("apiData is undefined");
+            return;
+          }
+          const apiKey = apiData.apiKey;
+          if (!apiKey) {
+            console.error("apiKey is undefined");
+            return;
+          }
+          const sheetId = apiData.sheetId;
+          if (!sheetId) {
+            console.error("sheetId is undefined");
+            return;
+          }
+          const range = apiData.range;
+          if (!range) {
+            console.error("range is undefined");
+            return;
+          }
+
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+          const response = await fetch(url);
+          if (!response.ok) {
+              console.error("Failed to fetch data from Google Sheets");
+              return null;
+          }
+          const data = await response.json();
+          return data.values || [];
+      }
+
+      const stationsSheetName = 'stations'; // バス停データ用のシート名
+      const stationRange = `${stationsSheetName}!A2:C500`; // バス停データの範囲を指定（A列はname、B列はlat、C列はlng）
+
+      // Google Sheetsからバス停データを取得する関数
+      async function fetchStationData() {
+          const apiData = await getApiData();
+          if (!apiData) {
+            console.error("apiData is undefined");
+            return;
+          }
+          const apiKey = apiData.apiKey;
+          const sheetId = apiData.sheetId;
+
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${stationRange}?key=${apiKey}`;
+          const response = await fetch(url);
+          if (!response.ok) {
+              console.error("Google Sheetsからバス停データを取得できませんでした");
+              return null;
+          }
+          const data = await response.json();
+          return data.values || []; // データが存在しない場合は空配列を返す
+      }
+
+      function haversineDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371e3; // 地球の半径（メートル）
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const d = R * c; // 距離（メートル）
+        return d;
+      }
+
+      async function showStations() {
+          playSound();
+          if (!currentLocationMarker) {
+              alert('現在位置が設定されていません。まず現在位置を設定してください。');
+              return;
+          }
+
+          const stationData = await fetchStationData();
+          if (!stationData) return;
+
+          // 既存のバス停マーカーをすべて削除
+          stationMarkers.forEach(marker => map3DElement.removeChild(marker));
+          stationMarkers = [];
+
+          // 現在位置を取得
+          const currentLat = currentLocationMarker.position.lat;
+          const currentLng = currentLocationMarker.position.lng;
+
+          // バス停のデータを地図に追加
+          for (const station of stationData) {
+              const [name, lat, lng] = station;
+
+              // 距離を計算
+              const distance = haversineDistance(currentLat, currentLng, parseFloat(lat), parseFloat(lng));
+
+              if (distance <= 2000) { // 2km以内
+                  // 各バス停の標高を取得
+                  const elevation = await getElevationforPoint({ lat: parseFloat(lat), lng: parseFloat(lng) });
+                  const marker = new Marker3DElement({
+                      position: { lat: parseFloat(lat), lng: parseFloat(lng), altitude: elevation || 0 },
+                      label: name, // ここでバス停名をラベルとして設定
+                  });
+                  // マーカーの外枠と内側をカスタマイズ
+                  const pinBackground = new PinElement({
+                    scale: 0.7,
+                    background: 'white', 
+                    borderColor: 'black', // 外枠
+                    glyph: 'S',
+                    glyphColor: 'black',
+                  });
+                  marker.append(pinBackground);
+                  map3DElement.append(marker);
+                  stationMarkers.push(marker);
+                  // マーカークリック時にバス停名を表示するイベントリスナーを追加
+                  marker.addEventListener('click', () => {
+                      alert(`バス停名: ${name}`);
+                  
+                  playgetSound();
+                  });
+              }
+          }
+      }
+    
+      // バス停表示ボタンのイベントリスナーを設定
+      document.getElementById('showStationsButton').addEventListener('click', showStations);
+
+      // バス停マーカー削除ボタンのイベントリスナーの修正
+      document.getElementById('clearStationMarkersButton').addEventListener('click', () => {
+        stationMarkers.forEach(marker => map3DElement.removeChild(marker));
+        stationMarkers = [];
+      });
+      
+      function createTrainIcon(label, color) {
+          return L.divIcon({
+              className: "custom-div-icon",
+              html: `<div style="background-color:${color};color:black;width:20px;height:20px;border-radius:50%;text-align:center;line-height:20px;">${label}</div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+          });
+      }
+
+      function createStationIcon() {
+          return L.divIcon({
+              className: "station-icon",
+              iconSize: [15, 15],
+              iconAnchor: [7, 7],
+          });
+      }
+      
+      function updateTableRows(data, tableId, updateCount = 0) {
+          const tableBody = document.getElementById(tableId).querySelector("tbody");
+      
+          data.forEach((row, index) => {
+              let existingRow = tableBody.querySelector(`tr[data-vehicle-id="${row[0]}"]`);
+      
+              if (!existingRow) {
+                  existingRow = document.createElement("tr");
+                  existingRow.setAttribute("data-vehicle-id", row[0]);
+
+                  const alphabetIdCell = document.createElement("td");
+                  alphabetIdCell.textContent = alphabetIDs[index];
+                  existingRow.appendChild(alphabetIdCell);
+
+                  const vehicleIdCell = document.createElement("td");
+                  vehicleIdCell.textContent = row[0];
+                  existingRow.appendChild(vehicleIdCell);
+
+                  for (let i = 0; i < 36; i++) {  // 9回分のデータ用セルに変更（4 * 9 = 36）
+                      const cell = document.createElement("td");
+                      existingRow.appendChild(cell);
+                  }
+
+                  tableBody.appendChild(existingRow);
+              }
+
+              const cells = existingRow.querySelectorAll("td");
+              cells[updateCount * 4 + 2].textContent = row[1];  // Latitude
+              cells[updateCount * 4 + 3].textContent = row[2];  // Longitude
+              cells[updateCount * 4 + 4].textContent = row[3];  // Readable Date
+              // cells[updateCount * 4 + 5].textContent = row[4];  // Destination
+          });
+      }
+
+      async function updateMap(markerSet, tableId, isExecution = false, updateCount = 0) {
+        const data = await fetchSheetData();
+        if (!data) return;
+    
+        data.forEach((row, index) => {
+            const [vehicleId, lat, lng, readableDate, destination] = row;
+
+            if (!markerSet[vehicleId]) {
+                markerSet[vehicleId] = [];
+            }
+
+            const position = { lat: parseFloat(lat), lng: parseFloat(lng), altitude: 0 };
+
+            let marker;
+            let pinBackground;
+            let color;
+            let label;
+
+            if (!isExecution) {
+                // バスボタンを押した場合のマーカー設定
+                const alphabetID = alphabetIDs[index];
+                color = alphabetColors[index % alphabetColors.length];
+                label = `${alphabetID}${updateCount + 1}`; // 'a1', 'b1', ...
+
+                marker = new Marker3DElement({
+                    position: position,
+                });
+
+                pinBackground = new PinElement({
+                    scale: 1.2,
+                    background: color, // alphabetColors ごとに色を設定
+                    borderColor: 'blue', // 外枠の色を設定
+                    glyph: label, // 'alphabetID + 回数' を設定
+                    glyphColor: 'black',
+                });
+            } else {
+                // 実行ボタンを押した場合のマーカー設定
+                color = executionColors[index % executionColors.length];
+                label = `${updateCount + 1}`; // '1', '2', '3', ...
+
+                marker = new Marker3DElement({
+                    position: position,
+                });
+
+                pinBackground = new PinElement({
+                    scale: 1.2,
+                    background: color, // executionColors ごとに色を設定
+                    borderColor: 'green', // 外枠の色を設定
+                    glyph: label, // 回数を設定
+                    glyphColor: 'black',
+                });
+            }
+
+            marker.append(pinBackground);
+            map3DElement.append(marker);
+            markerSet[vehicleId].push(marker);
+
+            // ポリラインの処理
+            if (markerSet[vehicleId].length > 1) {
+                const previousMarker = markerSet[vehicleId][markerSet[vehicleId].length - 2];
+
+                // 緯度・経度を取得
+                const startLat = previousMarker.position.lat;
+                const startLng = previousMarker.position.lng;
+                const endLat = parseFloat(lat);
+                const endLng = parseFloat(lng);
+
+                // ポリラインを作成
+                const polyline = document.createElement('gmp-polyline-3d');
+                polyline.setAttribute('altitude-mode', 'relative-to-ground');
+                polyline.setAttribute('stroke-color', color); // マーカーと同じ色を設定
+                polyline.setAttribute('stroke-width', '10');
+
+                // カスタムエレメントが定義されていることを確認
+                customElements.whenDefined('gmp-polyline-3d').then(() => {
+                    polyline.coordinates = [
+                        { lat: startLat, lng: startLng },
+                        { lat: endLat, lng: endLng }
+                    ];
+                });
+   
+                // マップに追加
+                map3DElement.append(polyline);
+
+                // ポリラインを保持（後で削除する場合）
+                if (!markerSet[vehicleId].polylines) {
+                    markerSet[vehicleId].polylines = [];
+                }
+                markerSet[vehicleId].polylines.push(polyline);
+            }
+
+            // テーブルの更新
+            updateTableRows(data, tableId, updateCount);
+          });
+      
+          const now = new Date();
+          document.getElementById('timestamp').textContent = now.toLocaleString();
+      }
+
+      async function sendRequest(vehicleId = '') {
+          let requestUrl = `GASのURL`;
+          let params = [];
+
+          if (vehicleId) {
+              params.push(`vehicleID=${encodeURIComponent(vehicleId)}`);
+          }
+      
+          if (currentLocationMarker) {
+              const { lat, lng } = currentLocationMarker.position;
+              params.push(`latitude=${encodeURIComponent(lat)}`);
+              params.push(`longitude=${encodeURIComponent(lng)}`);
+          }
+      
+          if (params.length > 0) {
+              requestUrl += '?' + params.join('&');
+          }
+      
+          try {
+              const response = await fetch(requestUrl);
+              if (response.ok) {
+                  console.log('Request successful');
+              } else {
+                  console.error('Request failed');
+              }
+          } catch (error) {
+              console.error('Error:', error);
+          }
+      }
+
+      // 音声を再生する関数
+      function playSound() {
+          const audio = new Audio('https://kickboxerj0322.github.io/bus-map-3d/073_start-13691.mp3');
+          audio.play();
+      }
+
+      document.getElementById('refreshButton').addEventListener('click', async () => {
+          // 音声を再生
+          playSound();
+          await sendRequest();  // VehicleIDなしでリクエストを送信
+          setTimeout(async () => {
+              await updateMap(markers, "dataTable");  // a～zのアルファベットを使用してマーカーを表示
+          }, 1000);  // 1秒待機してから地図を更新
+
+          // 音声を3回連続で再生
+          playAudioThreeTimes();
+      });
+
+      let stopUpdate = false; // 停止フラグを追加
+
+      document.getElementById('updateEvery20sButton').addEventListener('click', async () => {
+          // 音声を再生
+          playSound();
+          stopUpdate = false; // ボタンを押すごとに停止フラグをリセット
+          await sendRequest();
+
+          setTimeout(async () => {
+              if (!stopUpdate) { // 停止フラグが立っていない場合のみ更新
+                  await updateMap(markers, "dataTable", false, 0);
+                  // バスの位置が更新されるたびに音声を3回連続で再生
+                  playAudioThreeTimes(); 
+              }
+          }, 1000);  // 最初の更新を1秒後に行う
+
+          // 20秒ごとに9回更新
+          for (let i = 1; i < 9; i++) {
+              setTimeout(async () => {
+                  if (!stopUpdate) {
+                      await sendRequest();
+                      await updateMap(markers, "dataTable", false, i);
+                      // バスの位置が更新されるたびに音声を3回連続で再生
+                      playAudioThreeTimes();
+                  }
+              }, i * 20000);  // 20秒ごとに実行
+          }
+      });
+
+      document.getElementById('stopUpdateButton').addEventListener('click', () => {
+          stopUpdate = true; // 停止フラグを設定
+          playSound(); // 停止時に音声を再生
+      });
+
+      document.getElementById('clearDataMarkersButton').addEventListener('click', () => {
+          // データを更新ボタン用マーカーと矢印をすべて削除
+          for (let id in markers) {
+              markers[id].forEach(marker => map3DElement.removeChild(marker));
+
+              // ポリラインが存在する場合、削除
+              if (markers[id].polylines) {
+                markers[id].polylines.forEach(polyline => map3DElement.removeChild(polyline));
+              }
+
+          }
+          markers = {};
+
+          // データテーブルをクリアして初期状態に戻す
+          const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
+          dataTableBody.innerHTML = '';            
+
+          // 音声を再生
+          playSound();
+
+      });
+
+      let stopstart = false; // 停止フラグを追加
+
+      document.getElementById('startButton').addEventListener('click', async () => {
+          // 音声を再生
+          playSound();
+          stopstart = false; // ボタンを押すごとに停止フラグをリセット
+          const vehicleId = document.getElementById('vehicleIdInput').value;
+          if (!vehicleId) {
+              alert("Vehicle IDを入力してください");
+              return;
+          }
+         
+          // 既存のデータを更新ボタン用マーカーをすべて削除
+          for (let id in markers) {
+              markers[id].forEach(marker => map3DElement.removeChild(marker));
+          }
+          markers = {};
+
+          // 既存の実行ボタン用マーカーをすべて削除
+          for (let id in executionMarkers) {
+              executionMarkers[id].forEach(marker => map3DElement.removeChild(marker));
+          }
+          executionMarkers = {};
+
+          // 1回目のデータ更新と取得を即時に行う
+          await sendRequest(vehicleId);
+
+          setTimeout(async () => {
+              if (!stopstart) { // 停止フラグが立っていない場合のみ更新
+                  await updateMap(executionMarkers, "executionTable", true, 0);
+                  // バスの位置が更新されるたびに音声を3回連続で再生
+                  playAudioThreeTimes(); 
+              }
+          }, 1000);  // 1秒待機して最初のデータ取得
+
+          // 2回目以降は20秒ごとに取得
+          for (let i = 1; i < 10; i++) {
+              setTimeout(async () => {
+                  if (!stopstart) { // 停止フラグが立っていない場合のみ更新
+                      await sendRequest(vehicleId);
+                      await updateMap(executionMarkers, "executionTable", true, i);
+                      // バスの位置が更新されるたびに音声を3回連続で再生
+                      playAudioThreeTimes(); 
+                  }
+              }, i * 20000);  // 20秒ごとに実行
+          }
+      });
+
+      document.getElementById('stopstartButton').addEventListener('click', () => {
+          stopstart = true; // 停止フラグを設定
+          playSound(); // 停止時に音声を再生
+      });        
+
+      document.getElementById('clearExecutionMarkersButton').addEventListener('click', () => {
+          // 実行ボタン用マーカーと矢印をすべて削除
+          for (let id in executionMarkers) {
+            executionMarkers[id].forEach(marker => map3DElement.removeChild(marker));
+          }
+          executionMarkers = {};
+
+          // 実行テーブルをクリアして初期状態に戻す
+          const executionTableBody = document.getElementById('executionTable').querySelector('tbody');
+          executionTableBody.innerHTML = '';            
+
+          // 音声を再生
+          playSound();
+          
+      });
+
+      document.getElementById('flyCameraButton').addEventListener('click', async () => {
+        playSound();
+    
+        const currentCenter = map3DElement.center; // マップの現在の中心位置と高度を取得
+        const currentTilt = map3DElement.tilt; // 現在の傾斜角を取得
+        const currentRange = map3DElement.range; // 現在の範囲を取得
+    
+        const camera = {
+            center: currentCenter,
+            tilt: currentTilt,
+            range: currentRange
+        };
+    
+        // 現在のカメラ設定で上空から1回転させる
+        map3DElement.flyCameraAround({
+            camera,
+            durationMillis: 60000,
+            rounds: 1
+        });
+      });
+      // 探索オフボタンのイベントリスナー
+      document.getElementById('disableExplorationButton').addEventListener('click', () => {
+        playSound();
+        if (map3DElement) {
+            map3DElement.setAttribute('default-ui-disabled', '');
+        }
+      });
+
+      // 探索オンボタンのイベントリスナー
+      document.getElementById('enableExplorationButton').addEventListener('click', () => {
+        playSound();
+        if (map3DElement) {
+            map3DElement.removeAttribute('default-ui-disabled');
+        }
+      });
+
+      // FlyToボタンのイベントリスナーを追加
+      document.getElementById('flyToButton').addEventListener('click', async () => {
+        playSound();
+        const location = document.getElementById('placeInput').value;
+        if (!location) {
+            alert("地名やランドマーク名を入力してください");
+            return;
+        }
+
+        // Geocoding APIを使用して入力された場所の緯度・経度を取得
+        const { lat, lng } = await geocodeLocation(location);
+        if (lat !== null && lng !== null) {
+            // Elevationを取得
+            const elevation = await getElevationforPoint({ lat, lng });
+            const altitude = elevation ? elevation + 50 : 100;
+
+            // map.flyCameraToを使用して地図を移動
+            map3DElement.flyCameraTo({
+                endCamera: {
+                    center: { lat, lng, altitude },
+                    tilt: 65,
+                    range: 500
+                },
+                durationMillis: 10000
+            });
+            playgetSound();
+        } else {
+            alert("位置情報が取得できませんでした。別の場所を試してください。");
+        }
+      });
+
+      async function geocodeLocation(location) {
+        const apiData = await getApiData();
+        if (!apiData) {
+            console.error("apiData is undefined");
+            return { lat: null, lng: null };
+        }
+        const apiKey = apiData.mapsApiKey;
+        if (!apiKey) {
+            console.error("apiKey is undefined");
+            return { lat: null, lng: null };
+        }
+    
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
+        try {
+            const response = await fetch(geocodeUrl);
+            const data = await response.json();
+            if (data.status === "OK") {
+                const latLng = data.results[0].geometry.location;
+                return { lat: latLng.lat, lng: latLng.lng };
+            } else {
+                console.error("Geocoding failed:", data.status);
+                return { lat: null, lng: null };
+            }
+        } catch (error) {
+            console.error("Error fetching geocode data:", error);
+            return { lat: null, lng: null };
+        }
+      }
+
+      // ポリゴンボタンのイベントリスナーを追加
+      document.getElementById('polygonButton').addEventListener('click', async () => {
+        playSound();
+        let place = window.placeInputLastPlace;
+        if (place && place.geometry) {
+            await zoomToViewport(place.geometry);
+        } else {
+            // プレースホルダーから位置情報を取得
+            const location = document.getElementById('placeInput').value;
+            if (!location) {
+                alert('地名やランドマーク名を入力してください');
+                return;
+            }
+            const geometry = await geocodeLocationToGeometry(location);
+            if (geometry) {
+                await zoomToViewport(geometry);
+            } else {
+                alert('位置情報が取得できませんでした。別の場所を試してください。');
+            }
+        }
+      });
+
+      async function geocodeLocationToGeometry(location) {
+        const apiData = await getApiData();
+        if (!apiData) {
+            console.error("apiData is undefined");
+            return null;
+        }
+        const apiKey = apiData.mapsApiKey;
+        if (!apiKey) {
+            console.error("apiKey is undefined");
+            return null;
+        }
+
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
+        try {
+            const response = await fetch(geocodeUrl);
+            const data = await response.json();
+            if (data.status === "OK") {
+                const result = data.results[0];
+                const geometry = result.geometry;
+                return geometry;
+            } else {
+                console.error("Geocoding failed:", data.status);
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching geocode data:", error);
+            return null;
+        }
+      }
+      // 既存のスクリプト内に追加
+      document.getElementById('moreOptionsButton').addEventListener('click', () => {
+        playSound(); // 必要に応じて音声再生
+        const moreOptionsDiv = document.getElementById('moreOptions');
+        if (moreOptionsDiv.style.display === 'none') {
+            moreOptionsDiv.style.display = 'block';
+        } else {
+            moreOptionsDiv.style.display = 'none';
+        }
+      });
+　    // ログアウトボタンのイベントリスナーを追加
+　    document.getElementById('logoutButton').addEventListener('click', function() {
+        firebase.auth().signOut().then(function() {
+            // ログアウト成功時
+            window.location.href = "login.html";
+        }).catch(function(error) {
+            console.error("ログアウトエラー:", error);
+        });
+      });
+      document.getElementById('busResultsButton').addEventListener('click', function() {
+        var table = document.getElementById('dataTable');
+        if (table.style.display === 'none' || table.style.display === '') {
+            table.style.display = 'table';
+        } else {
+            table.style.display = 'none';
+        }
+      });
+      document.getElementById('executionResultsButton').addEventListener('click', function() {
+          var table = document.getElementById('executionTable');
+          if (table.style.display === 'none' || table.style.display === '') {
+              table.style.display = 'table';
+          } else {
+              table.style.display = 'none';
+          }
+      });
+      // "Labels off" ボタンのイベントリスナーを追加
+      document.getElementById('labelsOffButton').addEventListener('click', () => {
+        playSound();
+        if (map3DElement) {
+            map3DElement.defaultLabelsDisabled = true;
+        }
+      });
+      // "Labels on" ボタンのイベントリスナーを追加
+      document.getElementById('labelsOnButton').addEventListener('click', () => {
+        playSound();
+        if (map3DElement) {
+            map3DElement.defaultLabelsDisabled = false;
+        }
+      });
+    </script>
+　</body>
+</html>

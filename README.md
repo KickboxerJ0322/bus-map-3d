@@ -1,6 +1,8 @@
 ﻿# Bus Map 3D - バスマップ3D
 - "Bus Map 3D" is an innovative website that displays the current location of Japan's Toei buses on a 3D map in real time.
 - 「バスマップ3D」は、日本の都営バスの現在地を3Dマップ上にリアルタイムで表示する画期的なウェブサイトです。
+![画像](https://kickboxerj0322.github.io/bus-map-3d/061_page.png)
+- **[youtube](https://www.youtube.com/watch?v=rbp-JG-BtGU)**
 
 ## Inspiration - インスピレーション
 - Originally, the train and bus current location map system was built using Google Apps Script and Cloud Functions. I thought that if I expressed it using Photorealistic 3D Maps, I could create a more advanced application.

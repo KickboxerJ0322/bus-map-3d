@@ -11,7 +11,7 @@ function getVehiclePositions(startColumn, targetVehicleID, targetLatitude, targe
   var protobufData = response.getContent();
   
   var base64Data = Utilities.base64Encode(protobufData);
-  var cloudFunctionUrl = "https://us-central1-jumpeicloud.cloudfunctions.net/convertProtobufToJson";
+  var cloudFunctionUrl = "cloudFunctionsのUrl";
   
   var options = {
     'method': 'post',

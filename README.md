@@ -34,7 +34,7 @@
 - **001_sample_index.html**: html code. Please replace your Firebase API key. - htmlのコードです。FirebaseのAPIキー、を置き換えて利用ください。
 - **002_sample_login.html**: html code. Please replace your Firebase API key. - htmlのコードです。FirebaseのAPIキー、を置き換えて利用ください。
 - **011_sample_001_toei_3d_v4.html**: html code. Please replace your Firebase API key and GAS URL. - htmlのコードです。FirebaseのAPIキー、GASのURL、を置き換えて利用ください。
-- **021_sample_code.gs.txt**: gas code. Please replace your ODPT key, API key, sheet ID, sheet name, and Google Maps API key. - gasのコードです。ODPTキー、APIキー、シートID、シート名、Google Maps APIキー、を置き換えて利用ください。
+- **021_sample_code.gs.txt**: gas code. Please replace your ODPT key, cloudFunctionUrl, API key, sheet ID, sheet name, and Google Maps API key. - gasのコードです。ODPTキー、cloudFunctionsのUrl、APIキー、シートID、シート名、Google Maps APIキー、を置き換えて利用ください。
 - **031_sample_cloudfunctions_.gcloudignore**: Cloud Functions code. - Cloud Funcitonsのコードです。
 - **032_sample_cloudfunctions_gtfs-realtime.proto**: Cloud Functions code. - Cloud Funcitonsのコードです。
 - **033_sample_cloudfunctions_index.js**: This is the Cloud Functions code. - Cloud Funcitonsのコードです。

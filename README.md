@@ -17,8 +17,8 @@
 - 公開されている都営バスプロトコルバッファAPIとGTFS-RTデータを使用して構築しました。
 
 ## Challenges we ran into - 直面した課題
-- With Photorealistic 3D Maps, there are 600 to 1,000 Toei buses running at the same time, and when trying to display all the data on a web page at once, an issue occurred where HTML could not be processed. To solve this problem, the code was modified to only display buses within 2 km of the current location, making it possible to display up to about 20 buses.
-- フォトリアリスティック3Dマップでは、600台から1,000台の都営バスが同時に走っており、すべてのデータを一度にWebページに表示しようとすると、HTMLが処理できない問題が発生しました。この問題を解決するために、現在地から2km以内のバスのみを表示するようにコードを修正し、最大20台程度まで表示できるようにしました。
+- With Toei Bus Protocol Buffers API, there are 600 to 1,000 Toei buses running at the same time, and when trying to display all the data on a web page at once, an issue occurred where HTML could not be processed. To solve this problem, the code was modified to only display buses within 2 km of the current location, making it possible to display up to about 20 buses.
+- 都営バスプロトコルバッファAPIでは、600台から1,000台の都営バスが同時に走っており、すべてのデータを一度にWebページに表示しようとすると、HTMLが処理できない問題が発生しました。この問題を解決するために、現在地から2km以内のバスのみを表示するようにコードを修正し、最大20台程度まで表示できるようにしました。
 
 ## Accomplishments that we're proud of - 誇れる成果
 - The FlyCameraTo sample code did not work when copied as is, so I analyzed the code and modified it to implement the FlyCameraTo behavior.
